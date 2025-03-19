@@ -53,14 +53,38 @@ yarn dev
 
 The application can be deployed to any hosting service that supports Next.js applications, such as Vercel, Netlify, or a traditional server.
 
-### Deploy to Vercel
+### Deploy to Netlify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
+You can deploy this application to Netlify in several ways:
 
+#### Option 1: Connect to your Git repository (Recommended)
+
+1. Push your repository to GitHub, GitLab, or Bitbucket
+2. Log in to [Netlify](https://app.netlify.com/) and click "Add new site" > "Import an existing project"
+3. Connect to your Git provider and select your repository
+4. Configure build settings:
+   - Build command: `npm run build`
+   - Publish directory: `.next`
+5. Click "Deploy site"
+
+#### Option 2: Manual deployment using Netlify CLI
+
+1. Install Netlify CLI globally (if not already installed):
 ```bash
-npm install -g vercel
-vercel
+npm install -g netlify-cli
 ```
+
+2. Build your application:
+```bash
+npm run build
+```
+
+3. Deploy to Netlify:
+```bash
+npx netlify-cli deploy --prod
+```
+
+4. Follow the prompts to complete the deployment
 
 ## Technologies Used
 
