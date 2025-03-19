@@ -4,7 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "build": "next build",
+        "rename-backups": "node rename-backup-files.js",
+        "build": "npm run rename-backups && tsc --skipLibCheck && next build",
         "start": "next start",
         "lint": "next lint",
         "netlify-deploy": "netlify deploy --prod"

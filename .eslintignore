@@ -1,0 +1,16 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build output
+.next
+out
+build
+
+# Backup and broken files
+*.bak.*
+*.broken.*
+*_bak*
+*_broken*
+temp_* 

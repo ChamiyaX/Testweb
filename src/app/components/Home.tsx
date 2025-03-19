@@ -1190,7 +1190,8 @@ export default function Home() {
       }, 5000);
     } catch (err) {
       console.error('Error in finish and download:', err);
-      setError(`Failed to download image: ${err.message}`);
+      // Type check the error before accessing message property
+      setError(`Failed to download image: ${err instanceof Error ? err.message : 'Unknown error occurred'}`);
       
       // Fallback to html2canvas if universal renderer fails
       fallbackToHtml2Canvas();
@@ -1252,7 +1253,7 @@ export default function Home() {
     })
     .catch(err => {
       console.error('Error in takeScreenshot:', err);
-      setError(`Failed to download image: ${err.message}`);
+      setError(`Failed to download image: ${err instanceof Error ? err.message : 'Unknown error occurred'}`);
       
       // Fallback to html2canvas if universal renderer fails
       fallbackToHtml2Canvas();
