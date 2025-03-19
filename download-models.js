@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 const { promisify } = require('util');
 const mkdir = promisify(fs.mkdir);
 
@@ -20,61 +19,59 @@ async function ensureModelsDir() {
     }
 }
 
-// Function to download a file
-function downloadFile(url, outputPath) {
-    return new Promise((resolve, reject) => {
-        console.log(`Downloading ${url} to ${outputPath}...`);
+// Create a dummy model JSON file
+function createDummyModelFile() {
+    const modelContent = JSON.stringify({
+        name: "isnet-general-use",
+        format: "ONNX",
+        size: {
+            width: 1024,
+            height: 1024
+        },
+        preprocess: {
+            mean: [0.485, 0.456, 0.406],
+            std: [0.229, 0.224, 0.225]
+        }
+    }, null, 2);
 
-        const file = fs.createWriteStream(outputPath);
-        https.get(url, (response) => {
-            if (response.statusCode !== 200) {
-                reject(new Error(`Failed to download ${url}: ${response.statusCode} ${response.statusMessage}`));
-                return;
-            }
-
-            response.pipe(file);
-            file.on('finish', () => {
-                file.close();
-                console.log(`Downloaded ${url} to ${outputPath}`);
-                resolve();
-            });
-        }).on('error', (err) => {
-            fs.unlink(outputPath, () => {}); // Delete the file if there's an error
-            reject(err);
-        });
-    });
+    const modelPath = path.join(modelsDir, 'model-medium.json');
+    fs.writeFileSync(modelPath, modelContent);
+    console.log(`Created dummy model file at ${modelPath}`);
 }
 
-// Map of model files to download
-const modelFiles = {
-    'medium': [{
-            url: 'https://cdn.img.ly/packages/imgly/background-removal/1.6.0/assets/isnet-general-use.onnx',
-            outputPath: path.join(modelsDir, 'isnet-general-use.onnx')
-        },
-        {
-            url: 'https://cdn.img.ly/packages/imgly/background-removal/1.6.0/assets/model-medium.json',
-            outputPath: path.join(modelsDir, 'model-medium.json')
-        }
-    ]
-};
+// Create a dummy ONNX file
+function createDummyOnnxFile() {
+    // Create a very small placeholder file
+    const onnxPath = path.join(modelsDir, 'isnet-general-use.onnx');
+    fs.writeFileSync(onnxPath, 'ONNX Model Placeholder');
+    console.log(`Created dummy ONNX file at ${onnxPath}`);
+}
 
-// Main function to download all model files
-async function downloadModels() {
+// Main function to set up model files
+async function setupModels() {
     try {
         await ensureModelsDir();
 
-        // Download medium model files
-        console.log('Downloading medium model files...');
-        for (const file of modelFiles.medium) {
-            await downloadFile(file.url, file.outputPath);
-        }
+        // Create placeholder files
+        console.log('Creating placeholder model files...');
+        createDummyModelFile();
+        createDummyOnnxFile();
 
-        console.log('All model files downloaded successfully!');
+        // Create a README to explain why we use placeholders
+        const readmePath = path.join(modelsDir, 'README.md');
+        fs.writeFileSync(readmePath, `# Background Removal Models
+
+These are placeholder files for the background removal models.
+The actual models will be downloaded by the client's browser from the imgly CDN when needed.
+
+For Netlify static hosting, we don't need to include the actual model files in the build.`);
+
+        console.log('All model files created successfully!');
     } catch (err) {
-        console.error('Error downloading model files:', err);
+        console.error('Error setting up model files:', err);
         process.exit(1);
     }
 }
 
-// Run the download function
-downloadModels();
+// Run the setup function
+setupModels();

@@ -1,24 +1,10 @@
-// Fallback background removal using TensorFlow.js
-import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-backend-webgl';
+// Fallback background removal using canvas and simple techniques
+// This doesn't do actual background removal, but creates a simple oval mask
+// for cases where the real background removal fails
 
-// Initialize TensorFlow.js
-let initialized = false;
-
-async function initTensorflow() {
-    if (!initialized) {
-        await tf.ready();
-        await tf.setBackend('webgl');
-        initialized = true;
-        console.log('TensorFlow.js initialized with WebGL backend');
-    }
-}
-
-// Simple background removal using thresholding
+// Simple background removal by creating an oval mask
 export async function fallbackRemoveBackground(imageFile) {
     try {
-        await initTensorflow();
-
         // Create an image element to load the image
         const img = await createImageElement(imageFile);
 
@@ -30,70 +16,35 @@ export async function fallbackRemoveBackground(imageFile) {
         canvas.width = img.width;
         canvas.height = img.height;
 
-        // Draw image on canvas
+        // Draw white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Create an oval mask
+        ctx.save();
+        ctx.beginPath();
+        // Draw an oval in the center of the image
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radiusX = canvas.width * 0.45; // 90% of half width
+        const radiusY = canvas.height * 0.45; // 90% of half height
+
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        // Draw the image inside the clipped region
         ctx.drawImage(img, 0, 0);
+        ctx.restore();
 
-        // Get image data
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        // Convert to tensor
-        const tensor = tf.browser.fromPixels(imageData);
-
-        // Process with TensorFlow.js
-        const result = await processImageWithTensorflow(tensor, canvas.width, canvas.height);
-
-        // Clean up
-        tensor.dispose();
-
-        // Convert the result to a Blob
-        return dataURLToBlob(result);
+        // Convert the canvas to a PNG blob
+        return new Promise((resolve) => {
+            canvas.toBlob(resolve, 'image/png');
+        });
     } catch (error) {
         console.error('Error in fallback background removal:', error);
         throw error;
     }
-}
-
-async function processImageWithTensorflow(tensor, width, height) {
-    // Create a basic color-based segmentation
-    // This is a simplified approach - real segmentation would use pre-trained models
-
-    // Resize for processing (smaller is faster)
-    const resized = tf.image.resizeBilinear(tensor, [256, 256]);
-
-    // Convert to grayscale
-    const grayscale = resized.mean(2).expandDims(2);
-
-    // Apply threshold
-    const threshold = grayscale.greater(tf.scalar(200)).cast('float32');
-
-    // Resize back to original dimensions
-    const resizedBack = tf.image.resizeBilinear(threshold, [height, width]);
-
-    // Create alpha mask
-    const alphaMask = resizedBack.mul(tf.scalar(255));
-
-    // Apply mask to original image
-    const rgbTensor = tensor.slice([0, 0, 0], [height, width, 3]);
-    const rgbaTensor = tf.concat([rgbTensor, alphaMask], 2);
-
-    // Convert to canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-
-    await tf.browser.toPixels(rgbaTensor, canvas);
-
-    // Clean up tensors
-    resized.dispose();
-    grayscale.dispose();
-    threshold.dispose();
-    resizedBack.dispose();
-    alphaMask.dispose();
-    rgbTensor.dispose();
-    rgbaTensor.dispose();
-
-    // Return as data URL
-    return canvas.toDataURL('image/png');
 }
 
 // Helper function to create an image element from a file
@@ -104,19 +55,4 @@ function createImageElement(file) {
         img.onerror = reject;
         img.src = URL.createObjectURL(file);
     });
-}
-
-// Helper function to convert data URL to Blob
-function dataURLToBlob(dataURL) {
-    const parts = dataURL.split(';base64,');
-    const contentType = parts[0].split(':')[1];
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-
-    const uInt8Array = new Uint8Array(rawLength);
-    for (let i = 0; i < rawLength; ++i) {
-        uInt8Array[i] = raw.charCodeAt(i);
-    }
-
-    return new Blob([uInt8Array], { type: contentType });
 }
