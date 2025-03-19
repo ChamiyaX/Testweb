@@ -1,0 +1,24 @@
+# Backup and temporary files
+*.bak.*
+*.broken.*
+*_bak*
+*_broken*
+*_fixed*
+temp_*
+*.ignored
+
+# Source control
+.git
+.gitignore
+
+# Build artifacts
+.next
+out
+node_modules
+
+# Environment files
+.env*
+
+# Editor settings
+.vscode
+.idea 
