@@ -8,6 +8,9 @@ import html2canvas from 'html2canvas';
 const MAX_IMAGE_SIZE = 800; // Reduced maximum dimension for faster processing
 const COMPRESSION_QUALITY = 0.6; // Slightly lower quality for faster processing
 
+// Import the fallback background removal utility
+import { fallbackRemoveBackground } from '../utils/fallbackRemoveBackground';
+
 export default function Home() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -369,26 +372,40 @@ export default function Home() {
         try {
           setError('Removing background... This may take a moment.');
           
-          // Dynamically import the background removal package to avoid build issues
-          const { removeBackground } = await import('@imgly/background-removal');
+          let processedBlob;
           
-          const processedBlob = await removeBackground(optimizedFile, {
-            progress: (progress: any) => {
-              // Ensure progress is a valid number between 0-100
-              const progressPercent = progress ? Math.round(progress * 100) : 0;
-              setProcessingProgress(progressPercent);
-              
-              // Update error message with progress for better feedback
-              if (progressPercent > 0 && progressPercent < 100) {
-                setError(`Removing background: ${progressPercent}% complete. Please wait...`);
-              }
-            },
-            model: 'isnet', // Use smallest model for fastest processing
-            fetchArgs: { 
-              cache: 'force-cache'  // Cache model files
-            },
-            debug: false
-          });
+          try {
+            // Dynamically import the background removal package to avoid build issues
+            const { removeBackground } = await import('@imgly/background-removal');
+            
+            processedBlob = await removeBackground(optimizedFile, {
+              progress: (progress: any) => {
+                // Ensure progress is a valid number between 0-100
+                const progressPercent = progress ? Math.round(progress * 100) : 0;
+                setProcessingProgress(progressPercent);
+                
+                // Update error message with progress for better feedback
+                if (progressPercent > 0 && progressPercent < 100) {
+                  setError(`Removing background: ${progressPercent}% complete. Please wait...`);
+                }
+              },
+              model: 'medium', // Use medium model for better balance of speed vs quality
+              fetchArgs: { 
+                cache: 'force-cache',  // Cache model files
+                mode: 'cors',         // Add CORS mode
+                credentials: 'same-origin'
+              },
+              // Specify the public URL for models
+              publicPath: '/models/',
+              debug: true // Enable debug for troubleshooting
+            });
+          } catch (primaryError) {
+            console.error('Primary background removal failed, using fallback method:', primaryError);
+            setError('Trying alternative background removal method...');
+            
+            // Use our fallback method
+            processedBlob = await fallbackRemoveBackground(optimizedFile);
+          }
           
           // Convert the processed blob to a data URL instead of a blob URL
           const processedReader = new FileReader();
@@ -410,7 +427,8 @@ export default function Home() {
           setError(null);
         } catch (err) {
           console.error('Error removing background:', err);
-          setError('Failed to remove background. Please try a different image or check your internet connection.');
+          setError('Failed to remove background. Please try a different image or check your internet connection. ' + 
+                  (err instanceof Error ? `Error: ${err.message}` : ''));
           throw err; // Re-throw to handle in the outer catch
         }
       };

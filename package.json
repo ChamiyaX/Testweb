@@ -5,7 +5,8 @@
     "scripts": {
         "dev": "next dev",
         "cleanup": "node cleanup.js",
-        "build": "npm run cleanup && tsc --skipLibCheck --noEmit && next build",
+        "download-models": "node download-models.js",
+        "build": "npm run cleanup && npm run download-models && tsc --skipLibCheck --noEmit && next build",
         "start": "next start",
         "lint": "next lint",
         "netlify-deploy": "netlify deploy --prod"
