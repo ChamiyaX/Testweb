@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { removeBackground } from "@imgly/background-removal";
 import html2canvas from 'html2canvas';
 
 // Add image size limits and compression settings
@@ -369,6 +368,10 @@ export default function Home() {
       const processImage = async () => {
         try {
           setError('Removing background... This may take a moment.');
+          
+          // Dynamically import the background removal package to avoid build issues
+          const { removeBackground } = await import('@imgly/background-removal');
+          
           const processedBlob = await removeBackground(optimizedFile, {
             progress: (progress: any) => {
               // Ensure progress is a valid number between 0-100

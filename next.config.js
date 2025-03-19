@@ -4,13 +4,26 @@ const nextConfig = {
     images: {
         unoptimized: true, // Required for static export
     },
-    webpack: (config) => {
-        // Required for the background-removal package
-        config.resolve.alias = {
-            ...config.resolve.alias,
-            sharp$: false,
-            "onnxruntime-node$": false,
-        };
+    webpack: (config, { isServer }) => {
+        // Handle onnxruntime and other node modules that should only run on client
+        if (isServer) {
+            // For server-side builds, we want to mark these modules as external
+            // so they don't get bundled in the server build
+            config.externals = [...(config.externals || []),
+                'onnxruntime-web',
+                'onnxruntime-web/webgpu',
+                'sharp',
+                'onnxruntime-node'
+            ];
+        } else {
+            // For client-side builds, we need to handle these modules
+            config.resolve.alias = {
+                ...config.resolve.alias,
+                sharp$: false,
+                "onnxruntime-node$": false,
+            };
+        }
+
         return config;
     },
     // Add Turbopack configuration
